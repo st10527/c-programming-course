@@ -1,0 +1,68 @@
+name: Autograding Tests
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  build:
+    name: Autograding
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup environment
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y gcc
+    
+    - name: Compile hello.c
+      id: compile
+      run: |
+        gcc src/hello.c -o hello -Wall -Wextra
+      continue-on-error: false
+    
+    - name: Test output format
+      id: test-output
+      run: |
+        OUTPUT=$(./hello)
+        echo "Program output:"
+        echo "$OUTPUT"
+        echo ""
+        
+        # 檢查是否包含 "Hello, C Programming!"
+        if echo "$OUTPUT" | grep -q "Hello, C Programming!"; then
+          echo "✅ 第一行正確"
+        else
+          echo "❌ 第一行不正確"
+          exit 1
+        fi
+        
+        # 檢查是否包含 "My name is"
+        if echo "$OUTPUT" | grep -q "My name is"; then
+          echo "✅ 第二行格式正確"
+        else
+          echo "❌ 第二行格式不正確"
+          exit 1
+        fi
+        
+        echo ""
+        echo "✅ 所有測試通過！"
+    
+    - name: Check answers.md
+      run: |
+        if [ -f "answers.md" ]; then
+          # 檢查檔案不是空的（除了模板）
+          CONTENT=$(cat answers.md | grep -v "^#" | grep -v "^$" | grep -v "（你的答案）")
+          if [ -n "$CONTENT" ]; then
+            echo "✅ answers.md 已填寫"
+          else
+            echo "⚠️ answers.md 似乎還沒填寫完成"
+          fi
+        else
+          echo "❌ answers.md 不存在"
+          exit 1
+        fi
