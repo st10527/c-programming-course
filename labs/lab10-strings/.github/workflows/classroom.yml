@@ -1,0 +1,121 @@
+name: Autograding Tests
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  build:
+    name: Autograding
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup environment
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y gcc
+    
+    - name: Compile all source files
+      run: |
+        gcc src/strings.c -o strings -Wall -Wextra && echo "✅ strings.c"
+        gcc src/safety.c -o safety -Wall && echo "✅ safety.c"
+        gcc src/my_string.c -o my_string -Wall -Wextra && echo "✅ my_string.c"
+    
+    - name: Test strings.c
+      run: |
+        OUTPUT=$(./strings)
+        echo "$OUTPUT"
+        PASS=0
+        TOTAL=4
+        
+        if echo "$OUTPUT" | grep -q "greeting: Hello, Alice!"; then
+          echo "✅ 字串拼接正確"
+          PASS=$((PASS+1))
+        else
+          echo "❌ 字串拼接不正確"
+        fi
+        
+        if echo "$OUTPUT" | grep -q "密碼正確"; then
+          echo "✅ 字串比較正確"
+          PASS=$((PASS+1))
+        else
+          echo "❌ 字串比較不正確"
+        fi
+        
+        if echo "$OUTPUT" | grep -q "大寫: 4"; then
+          echo "✅ 字元統計正確"
+          PASS=$((PASS+1))
+        else
+          echo "❌ 字元統計不正確"
+        fi
+        
+        if echo "$OUTPUT" | grep -q "全大寫: HELLO WORLD"; then
+          echo "✅ 大小寫轉換正確"
+          PASS=$((PASS+1))
+        else
+          echo "❌ 大小寫轉換不正確"
+        fi
+        
+        echo ""
+        echo "通過 $PASS / $TOTAL 項測試"
+        if [ $PASS -lt 2 ]; then
+          exit 1
+        fi
+    
+    - name: Test my_string.c
+      run: |
+        OUTPUT=$(./my_string)
+        echo "$OUTPUT"
+        PASS=0
+        TOTAL=4
+        
+        if echo "$OUTPUT" | grep -q 'my_strlen("Hello") = 5'; then
+          echo "✅ my_strlen 正確"
+          PASS=$((PASS+1))
+        else
+          echo "❌ my_strlen 不正確"
+        fi
+        
+        if echo "$OUTPUT" | grep -q "my_strcpy: Hello, World!"; then
+          echo "✅ my_strcpy 正確"
+          PASS=$((PASS+1))
+        else
+          echo "❌ my_strcpy 不正確"
+        fi
+        
+        if echo "$OUTPUT" | grep -q 'my_strcmp("abc", "abc") = 0'; then
+          echo "✅ my_strcmp 正確"
+          PASS=$((PASS+1))
+        else
+          echo "❌ my_strcmp 不正確"
+        fi
+        
+        if echo "$OUTPUT" | grep -q "my_strcat: Hello, World!"; then
+          echo "✅ my_strcat 正確"
+          PASS=$((PASS+1))
+        else
+          echo "❌ my_strcat 不正確"
+        fi
+        
+        echo ""
+        echo "通過 $PASS / $TOTAL 項測試"
+        if [ $PASS -lt 2 ]; then
+          exit 1
+        fi
+    
+    - name: Check answer files
+      run: |
+        if [ -f "safety_answers.md" ]; then
+          CONTENT=$(cat safety_answers.md | grep -v "^#" | grep -v "^$" | grep -v "（你的答案）" | grep -v "在此")
+          if [ -n "$CONTENT" ]; then
+            echo "✅ safety_answers.md 已填寫"
+          else
+            echo "⚠️ safety_answers.md 似乎還沒填寫完成"
+          fi
+        else
+          echo "❌ safety_answers.md 不存在"
+        fi

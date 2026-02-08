@@ -1,0 +1,117 @@
+name: Autograding Tests
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  build:
+    name: Autograding
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup environment
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y gcc
+    
+    - name: Compile source files
+      run: |
+        gcc src/recursion.c -o recursion -Wall -Wextra && echo "✅ recursion.c"
+        gcc src/trace.c -o trace -Wall && echo "✅ trace.c"
+        # debug.c 可能有未修復的 bug，允許編譯失敗
+        gcc src/debug.c -o debug -Wall 2>&1 && echo "✅ debug.c" || echo "⚠️ debug.c 編譯有警告或錯誤"
+    
+    - name: Test recursion.c
+      run: |
+        OUTPUT=$(./recursion)
+        echo "$OUTPUT"
+        PASS=0
+        TOTAL=5
+        
+        if echo "$OUTPUT" | grep -q "sum_to_n(5) = 15"; then
+          echo "✅ sum_to_n 正確"
+          PASS=$((PASS+1))
+        else
+          echo "❌ sum_to_n 不正確"
+        fi
+        
+        if echo "$OUTPUT" | grep -q "sum_to_n(10) = 55"; then
+          echo "✅ sum_to_n(10) 正確"
+          PASS=$((PASS+1))
+        else
+          echo "❌ sum_to_n(10) 不正確"
+        fi
+        
+        if echo "$OUTPUT" | grep -q 'my_strlen("Hello") = 5'; then
+          echo "✅ my_strlen 正確"
+          PASS=$((PASS+1))
+        else
+          echo "❌ my_strlen 不正確"
+        fi
+        
+        if echo "$OUTPUT" | grep -q "print_binary(10)"; then
+          echo "✅ print_binary 有輸出"
+          PASS=$((PASS+1))
+        else
+          echo "❌ print_binary 沒有輸出"
+        fi
+        
+        if echo "$OUTPUT" | grep -q "print_reverse(1234)"; then
+          echo "✅ print_reverse 有輸出"
+          PASS=$((PASS+1))
+        else
+          echo "❌ print_reverse 沒有輸出"
+        fi
+        
+        echo ""
+        echo "通過 $PASS / $TOTAL 項測試"
+        if [ $PASS -lt 3 ]; then
+          exit 1
+        fi
+    
+    - name: Test debug.c fixes
+      run: |
+        if [ -f "debug" ]; then
+          # 設定超時防止無窮遞迴
+          timeout 5 ./debug > debug_output.txt 2>&1 || true
+          OUTPUT=$(cat debug_output.txt)
+          echo "$OUTPUT"
+          
+          if echo "$OUTPUT" | grep -q "factorial(5) = 120"; then
+            echo "✅ factorial bug 已修復"
+          else
+            echo "⚠️ factorial bug 尚未修復"
+          fi
+          
+          if echo "$OUTPUT" | grep -q "power(5, 0) = 1"; then
+            echo "✅ power bug 已修復"
+          else
+            echo "⚠️ power bug 尚未修復"
+          fi
+          
+          if echo "$OUTPUT" | grep -q "fibonacci(5) = 5"; then
+            echo "✅ fibonacci bug 已修復"
+          else
+            echo "⚠️ fibonacci bug 尚未修復"
+          fi
+        else
+          echo "⚠️ debug.c 未能編譯，跳過測試"
+        fi
+    
+    - name: Check answer files
+      run: |
+        if [ -f "trace_answers.md" ]; then
+          CONTENT=$(cat trace_answers.md | grep -v "^#" | grep -v "^$" | grep -v "（你的答案）" | grep -v "在此")
+          if [ -n "$CONTENT" ]; then
+            echo "✅ trace_answers.md 已填寫"
+          else
+            echo "⚠️ trace_answers.md 似乎還沒填寫完成"
+          fi
+        else
+          echo "❌ trace_answers.md 不存在"
+        fi

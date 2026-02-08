@@ -1,0 +1,110 @@
+name: Autograding Tests
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  build:
+    name: Autograding
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup environment
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y gcc
+    
+    - name: Compile all source files
+      run: |
+        gcc src/arrays.c -o arrays -Wall -Wextra && echo "✅ arrays.c"
+        gcc src/memory.c -o memory -Wall && echo "✅ memory.c"
+        gcc src/matrix.c -o matrix -Wall && echo "✅ matrix.c"
+    
+    - name: Test arrays.c
+      run: |
+        OUTPUT=$(./arrays)
+        echo "$OUTPUT"
+        PASS=0
+        TOTAL=5
+        
+        if echo "$OUTPUT" | grep -q "最大值: 89"; then
+          echo "✅ find_max 正確"
+          PASS=$((PASS+1))
+        else
+          echo "❌ find_max 不正確"
+        fi
+        
+        if echo "$OUTPUT" | grep -q "最小值: 12"; then
+          echo "✅ find_min 正確"
+          PASS=$((PASS+1))
+        else
+          echo "❌ find_min 不正確"
+        fi
+        
+        if echo "$OUTPUT" | grep -q "反轉後.*5.*4.*3.*2.*1"; then
+          echo "✅ reverse_array 正確"
+          PASS=$((PASS+1))
+        else
+          echo "❌ reverse_array 不正確"
+        fi
+        
+        if echo "$OUTPUT" | grep -q "3 出現 3 次"; then
+          echo "✅ count_occurrences 正確"
+          PASS=$((PASS+1))
+        else
+          echo "❌ count_occurrences 不正確"
+        fi
+        
+        if echo "$OUTPUT" | grep -q "移除重複後.*長度: 5"; then
+          echo "✅ remove_duplicates 正確"
+          PASS=$((PASS+1))
+        else
+          echo "❌ remove_duplicates 不正確"
+        fi
+        
+        echo ""
+        echo "通過 $PASS / $TOTAL 項測試"
+        if [ $PASS -lt 3 ]; then
+          exit 1
+        fi
+    
+    - name: Test matrix.c
+      run: |
+        OUTPUT=$(./matrix)
+        echo "$OUTPUT"
+        PASS=0
+        
+        if echo "$OUTPUT" | grep -q "Row 0 總和: 10"; then
+          echo "✅ row_sums 正確"
+          PASS=$((PASS+1))
+        fi
+        
+        if echo "$OUTPUT" | grep -q "Row 2 總和: 42"; then
+          echo "✅ row_sums 進階正確"
+          PASS=$((PASS+1))
+        fi
+        
+        if echo "$OUTPUT" | grep -q "Col 0 總和: 15"; then
+          echo "✅ col_sums 正確"
+          PASS=$((PASS+1))
+        fi
+        
+        echo "通過 $PASS / 3 項矩陣測試"
+    
+    - name: Check answer files
+      run: |
+        if [ -f "memory_answers.md" ]; then
+          CONTENT=$(cat memory_answers.md | grep -v "^#" | grep -v "^$" | grep -v "（你的答案）" | grep -v "在此")
+          if [ -n "$CONTENT" ]; then
+            echo "✅ memory_answers.md 已填寫"
+          else
+            echo "⚠️ memory_answers.md 似乎還沒填寫完成"
+          fi
+        else
+          echo "❌ memory_answers.md 不存在"
+        fi

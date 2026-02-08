@@ -1,0 +1,64 @@
+name: Autograding Tests
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  build:
+    name: Autograding
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup environment
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y gcc
+    
+    - name: Compile operators.c
+      run: |
+        gcc src/operators.c -o operators -Wall -Wextra
+        echo "✅ operators.c 編譯成功"
+    
+    - name: Test operators output
+      run: |
+        OUTPUT=$(./operators)
+        echo "$OUTPUT"
+        
+        if echo "$OUTPUT" | grep -q "15 / 4 = 3 ... 3"; then
+          echo "✅ 練習 1 正確"
+        else
+          echo "❌ 練習 1 錯誤"
+        fi
+        
+        if echo "$OUTPUT" | grep -q "score = 160"; then
+          echo "✅ 練習 2 正確"
+        else
+          echo "❌ 練習 2 錯誤"
+        fi
+        
+        if echo "$OUTPUT" | grep -q "5 / 2 = 2.5"; then
+          echo "✅ 練習 4 正確"
+        else
+          echo "❌ 練習 4 錯誤"
+        fi
+        
+        if echo "$OUTPUT" | grep -q "17 是奇數"; then
+          echo "✅ 練習 5 正確"
+        else
+          echo "❌ 練習 5 錯誤"
+        fi
+    
+    - name: Compile and check bugs.c
+      run: |
+        # bugs.c 修正後應該能編譯
+        if gcc src/bugs.c -o bugs -Wall 2>&1; then
+          echo "✅ bugs.c 編譯成功"
+          ./bugs
+        else
+          echo "⚠️ bugs.c 還有編譯錯誤需要修正"
+        fi

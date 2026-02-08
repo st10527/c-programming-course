@@ -1,0 +1,47 @@
+name: Autograding Tests
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  build:
+    name: Autograding
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup environment
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y gcc
+    
+    - name: Compile source files
+      run: |
+        gcc src/nested.c -o nested -Wall && echo "✅ nested.c"
+        gcc src/patterns.c -o patterns -Wall && echo "✅ patterns.c"
+    
+    - name: Test nested.c
+      run: |
+        OUTPUT=$(./nested)
+        echo "$OUTPUT"
+        
+        if echo "$OUTPUT" | grep -q "17 是質數"; then
+          echo "✅ 質數判斷正確"
+        fi
+        
+        if echo "$OUTPUT" | grep -q "1 2 3 4 6 8 12 24"; then
+          echo "✅ 因數查找正確"
+        fi
+    
+    - name: Check debug.c modifications
+      run: |
+        # 檢查 debug.c 是否被修改
+        gcc src/debug.c -o debug -Wall 2>&1 || true
+        if [ -f "debug" ]; then
+          OUTPUT=$(./debug 2>&1 | head -20)
+          echo "$OUTPUT"
+        fi

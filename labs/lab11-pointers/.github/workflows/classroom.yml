@@ -1,0 +1,121 @@
+name: Autograding Tests
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  build:
+    name: Autograding
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup environment
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y gcc
+    
+    - name: Compile all source files
+      run: |
+        gcc src/pointers.c -o pointers -Wall -Wextra && echo "✅ pointers.c"
+        gcc src/diagrams.c -o diagrams -Wall && echo "✅ diagrams.c"
+        gcc src/applications.c -o applications -Wall -Wextra && echo "✅ applications.c"
+    
+    - name: Test pointers.c
+      run: |
+        OUTPUT=$(./pointers)
+        echo "$OUTPUT"
+        PASS=0
+        TOTAL=4
+        
+        if echo "$OUTPUT" | grep -q "\*p = 10"; then
+          echo "✅ 基本指標操作正確"
+          PASS=$((PASS+1))
+        else
+          echo "❌ 基本指標操作不正確"
+        fi
+        
+        if echo "$OUTPUT" | grep -q "\*\*pp = 100"; then
+          echo "✅ 雙重指標正確"
+          PASS=$((PASS+1))
+        else
+          echo "❌ 雙重指標不正確"
+        fi
+        
+        if echo "$OUTPUT" | grep -q "arr\[2\] = 30"; then
+          echo "✅ 指標遍歷陣列正確"
+          PASS=$((PASS+1))
+        else
+          echo "❌ 指標遍歷陣列不正確"
+        fi
+        
+        if echo "$OUTPUT" | grep -q "值相同"; then
+          echo "✅ 指標比較正確"
+          PASS=$((PASS+1))
+        else
+          echo "❌ 指標比較不正確"
+        fi
+        
+        echo ""
+        echo "通過 $PASS / $TOTAL 項測試"
+        if [ $PASS -lt 2 ]; then
+          exit 1
+        fi
+    
+    - name: Test applications.c
+      run: |
+        OUTPUT=$(./applications)
+        echo "$OUTPUT"
+        PASS=0
+        TOTAL=4
+        
+        if echo "$OUTPUT" | grep -q "交換後: x=10, y=5"; then
+          echo "✅ swap 正確"
+          PASS=$((PASS+1))
+        else
+          echo "❌ swap 不正確"
+        fi
+        
+        if echo "$OUTPUT" | grep -q "最小: 12, 最大: 89"; then
+          echo "✅ min_max 正確"
+          PASS=$((PASS+1))
+        else
+          echo "❌ min_max 不正確"
+        fi
+        
+        if echo "$OUTPUT" | grep -q "17 / 5 = 3 餘 2"; then
+          echo "✅ divide 正確"
+          PASS=$((PASS+1))
+        else
+          echo "❌ divide 不正確"
+        fi
+        
+        if echo "$OUTPUT" | grep -q "排序後.*11.*12.*22.*25.*34.*64.*90"; then
+          echo "✅ bubble_sort 正確"
+          PASS=$((PASS+1))
+        else
+          echo "❌ bubble_sort 不正確"
+        fi
+        
+        echo ""
+        echo "通過 $PASS / $TOTAL 項測試"
+        if [ $PASS -lt 2 ]; then
+          exit 1
+        fi
+    
+    - name: Check answer files
+      run: |
+        if [ -f "diagram_answers.md" ]; then
+          CONTENT=$(cat diagram_answers.md | grep -v "^#" | grep -v "^$" | grep -v "（你的答案）" | grep -v "在此")
+          if [ -n "$CONTENT" ]; then
+            echo "✅ diagram_answers.md 已填寫"
+          else
+            echo "⚠️ diagram_answers.md 似乎還沒填寫完成"
+          fi
+        else
+          echo "❌ diagram_answers.md 不存在"
+        fi

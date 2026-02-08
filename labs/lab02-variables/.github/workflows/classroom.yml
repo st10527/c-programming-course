@@ -1,0 +1,58 @@
+name: Autograding Tests
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  build:
+    name: Autograding
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup environment
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y gcc
+    
+    - name: Compile trace.c
+      run: |
+        gcc src/trace.c -o trace -Wall -Wextra
+        echo "✅ trace.c 編譯成功"
+    
+    - name: Compile memory.c
+      run: |
+        gcc src/memory.c -o memory -Wall -Wextra
+        echo "✅ memory.c 編譯成功"
+    
+    - name: Check trace_answers.md
+      run: |
+        if [ -f "trace_answers.md" ]; then
+          CONTENT=$(cat trace_answers.md | grep -v "^#" | grep -v "^$" | grep -v "^\|" | grep -v "^-")
+          if [ -n "$CONTENT" ]; then
+            echo "✅ trace_answers.md 已填寫"
+          else
+            echo "⚠️ trace_answers.md 似乎還沒填寫完成"
+          fi
+        else
+          echo "❌ trace_answers.md 不存在"
+          exit 1
+        fi
+    
+    - name: Check memory_answers.md
+      run: |
+        if [ -f "memory_answers.md" ]; then
+          CONTENT=$(cat memory_answers.md | grep -v "^#" | grep -v "^$" | grep -v "^\|" | grep -v "^-")
+          if [ -n "$CONTENT" ]; then
+            echo "✅ memory_answers.md 已填寫"
+          else
+            echo "⚠️ memory_answers.md 似乎還沒填寫完成"
+          fi
+        else
+          echo "❌ memory_answers.md 不存在"
+          exit 1
+        fi

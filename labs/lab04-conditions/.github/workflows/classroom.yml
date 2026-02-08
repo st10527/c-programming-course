@@ -1,0 +1,53 @@
+name: Autograding Tests
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  build:
+    name: Autograding
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup environment
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y gcc
+    
+    - name: Compile all source files
+      run: |
+        gcc src/conditions.c -o conditions -Wall -Wextra && echo "✅ conditions.c"
+        gcc src/compare.c -o compare -Wall && echo "✅ compare.c"
+        gcc src/trace.c -o trace -Wall && echo "✅ trace.c"
+    
+    - name: Test conditions.c
+      run: |
+        OUTPUT=$(./conditions)
+        echo "$OUTPUT"
+        
+        if echo "$OUTPUT" | grep -q "等第是: B"; then
+          echo "✅ 練習 1 正確"
+        fi
+        
+        if echo "$OUTPUT" | grep -q "2024 是閏年"; then
+          echo "✅ 練習 2 正確"
+        fi
+        
+        if echo "$OUTPUT" | grep -q "最大值是: 42"; then
+          echo "✅ 練習 3 正確"
+        fi
+    
+    - name: Check answer files
+      run: |
+        for f in compare_answers.md trace_answers.md; do
+          if [ -f "$f" ]; then
+            echo "✅ $f 存在"
+          else
+            echo "❌ $f 不存在"
+          fi
+        done

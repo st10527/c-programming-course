@@ -1,0 +1,106 @@
+name: Autograding Tests
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  build:
+    name: Autograding
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup environment
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y gcc
+    
+    - name: Compile all source files
+      run: |
+        gcc src/functions.c -o functions -Wall -Wextra && echo "✅ functions.c"
+        gcc src/trace.c -o trace -Wall && echo "✅ trace.c"
+        gcc src/design.c -o design -Wall && echo "✅ design.c"
+    
+    - name: Test functions.c
+      run: |
+        OUTPUT=$(./functions)
+        echo "$OUTPUT"
+        PASS=0
+        TOTAL=5
+        
+        if echo "$OUTPUT" | grep -q "my_abs(-5) = 5"; then
+          echo "✅ my_abs 正確"
+          PASS=$((PASS+1))
+        else
+          echo "❌ my_abs 不正確"
+        fi
+        
+        if echo "$OUTPUT" | grep -q "power(2, 3) = 8"; then
+          echo "✅ power 正確"
+          PASS=$((PASS+1))
+        else
+          echo "❌ power 不正確"
+        fi
+        
+        if echo "$OUTPUT" | grep -q "is_prime(7) = 1"; then
+          echo "✅ is_prime 正確"
+          PASS=$((PASS+1))
+        else
+          echo "❌ is_prime 不正確"
+        fi
+        
+        if echo "$OUTPUT" | grep -q "gcd(12, 8) = 4"; then
+          echo "✅ gcd 正確"
+          PASS=$((PASS+1))
+        else
+          echo "❌ gcd 不正確"
+        fi
+        
+        if echo "$OUTPUT" | grep -q "power(3, 4) = 81"; then
+          echo "✅ power 進階測試正確"
+          PASS=$((PASS+1))
+        else
+          echo "❌ power 進階測試不正確"
+        fi
+        
+        echo ""
+        echo "通過 $PASS / $TOTAL 項測試"
+        if [ $PASS -lt 3 ]; then
+          exit 1
+        fi
+    
+    - name: Test design.c refactoring
+      run: |
+        OUTPUT=$(./design)
+        echo "$OUTPUT"
+        
+        if echo "$OUTPUT" | grep -q "數學平均: 87.6"; then
+          echo "✅ 輸出正確"
+        else
+          echo "❌ 輸出不正確"
+          exit 1
+        fi
+        
+        # 檢查是否有 calculate_average 函式
+        if grep -q "calculate_average" src/design.c; then
+          echo "✅ 已重構為函式"
+        else
+          echo "⚠️ 尚未重構為 calculate_average 函式"
+        fi
+    
+    - name: Check answer files
+      run: |
+        if [ -f "trace_answers.md" ]; then
+          CONTENT=$(cat trace_answers.md | grep -v "^#" | grep -v "^$" | grep -v "（你的答案）" | grep -v "在此")
+          if [ -n "$CONTENT" ]; then
+            echo "✅ trace_answers.md 已填寫"
+          else
+            echo "⚠️ trace_answers.md 似乎還沒填寫完成"
+          fi
+        else
+          echo "❌ trace_answers.md 不存在"
+        fi

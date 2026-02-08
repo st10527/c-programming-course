@@ -1,0 +1,51 @@
+name: Autograding Tests
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  build:
+    name: Autograding
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup environment
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y gcc
+    
+    - name: Compile source files
+      run: |
+        gcc src/loops.c -o loops -Wall -Wextra && echo "✅ loops.c"
+        gcc src/trace.c -o trace -Wall && echo "✅ trace.c"
+        gcc src/predict.c -o predict -Wall && echo "✅ predict.c"
+    
+    - name: Test loops.c
+      run: |
+        OUTPUT=$(./loops)
+        echo "$OUTPUT"
+        
+        if echo "$OUTPUT" | grep -q "1 2 3 4 5 6 7 8 9 10"; then
+          echo "✅ 練習 1 正確"
+        fi
+        
+        if echo "$OUTPUT" | grep -q "5050"; then
+          echo "✅ 練習 2 正確"
+        fi
+        
+        if echo "$OUTPUT" | grep -q "120"; then
+          echo "✅ 練習 4 正確"
+        fi
+    
+    - name: Check trace_answers.md
+      run: |
+        if [ -f "trace_answers.md" ]; then
+          echo "✅ trace_answers.md 存在"
+        else
+          echo "❌ trace_answers.md 不存在"
+        fi
